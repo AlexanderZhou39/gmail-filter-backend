@@ -20,4 +20,5 @@ from django.views.decorators.csrf import csrf_exempt
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('colleges/api/filter/', csrf_exempt(views.college_post)),
+    # path('', views.LandingView)
 ]
