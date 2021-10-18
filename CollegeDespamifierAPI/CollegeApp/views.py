@@ -8,10 +8,12 @@ from django.http import JsonResponse
 # Create your views here.
 
 
-# class LandingView(View):
-#     template_name = 'index'
-#     def get(self, request):
-#         return render(request, self.template_name)
+class LandingView(View):
+    template_name = 'templates/index.html'
+    def get(self, request):
+        return render(request, self.template_name)
+
+
 
 @api_view(['POST'])
 def college_post(request):
@@ -54,66 +56,73 @@ def college_post(request):
         except College.DoesNotExist:
             college_dict[domain] = True
             continue
-
         try:
             # SAT Score
             if filters.get('optStatus').get('useSATScore') == 'true':
                 filter_data = filters.get('sat')
-                if filter_data.get('min'):
+                if filter_data.get('min') and college_info.sat:
                     total_filters += 1
                     if int(filter_data.get('min')) <= college_info.sat:
                         passed_filters += 1
-                if filter_data.get('max'):
+                if filter_data.get('max') and college_info.sat:
                     total_filters += 1
                     if int(filter_data.get('max')) >= college_info.sat:
                         passed_filters += 1
             # ACT Score
             if filters.get('optStatus').get('useACTScore') == 'true':
                 filter_data = filters.get('act')
-                if filter_data.get('min'):
+                if filter_data.get('min') and college_info.act:
                     total_filters += 1
                     if int(filter_data.get('min')) <= college_info.act:
                         passed_filters += 1
-                if filter_data.get('max'):
+                if filter_data.get('max') and college_info.act:
                     total_filters += 1
                     if int(filter_data.get('max')) >= college_info.act:
                         passed_filters += 1
             # Tuition
             if filters.get('optStatus').get('useTution') == 'true':
                 filter_data = filters.get('tuition')
-                if filter_data.get('max'):
+                if filter_data.get('max') and college_info.tuition:
                     total_filters += 1
                     if int(filter_data.get('max')) >= college_info.tuition:
                         passed_filters += 1
             # Student Body Size
             if filters.get('optStatus').get('useStudentBodySize') == 'true':
                 filter_data = filters.get('studentbodysize')
-                if filter_data.get('min'):
+                if filter_data.get('min') and college_info.undergrad_student_body:
                     total_filters += 1
                     if int(filter_data.get('min')) <= college_info.undergrad_student_body:
                         passed_filters += 1
-                if filter_data.get('max'):
+                if filter_data.get('max') and college_info.undergrad_student_body:
                     total_filters += 1
                     if int(filter_data.get('max')) >= college_info.undergrad_student_body:
                         passed_filters += 1
             # Acceptance Rate
             if filters.get('optStatus').get('useAcceptanceRate') == 'true':
                 filter_data = filters.get('acceptanceRate')
-                if filter_data.get('min'):
+                if filter_data.get('min') and college_info.acceptance:
                     total_filters += 1
                     if int(filter_data.get('min')) <= college_info.acceptance:
                         passed_filters += 1
-                if filter_data.get('max'):
+                if filter_data.get('max') and college_info.acceptance:
                     total_filters += 1
                     if int(filter_data.get('max')) >= college_info.acceptance:
                         passed_filters += 1
             # School Rankings
             if filters.get('optStatus').get('useRanking') == 'true':
                 filter_data = filters.get('schoolRankings')
-                if filter_data.get('lowestRanking'):
+                if filter_data.get('lowestRanking') and college_info.overall_rank:
                     total_filters += 1
                     if int(filter_data.get('lowestRanking')) <= college_info.overall_rank:
                         passed_filters += 1
+            # Region
+            if filters.get('optStatus').get('useStates') == 'true':
+                filter_data = filters.get('states')
+                if filter_data:
+                    total_filters += 1
+                    if college_info.state in filter_data.get('states')
+                        if int(filter_data.get('lowestRanking')) <= college_info.overall_rank:
+                            passed_filters += 1
         except:
             content = {'error': 'Invalid Filters'}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
