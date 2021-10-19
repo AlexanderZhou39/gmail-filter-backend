@@ -6,84 +6,128 @@ from .serializer import CollegeSerializer
 from .models import College
 from django.http import JsonResponse
 # Create your views here.
+
+
+class LandingView(View):
+    template_name = 'templates/index.html'
+    def get(self, request):
+        return render(request, self.template_name)
+
+
+
 @api_view(['POST'])
 def college_post(request):
  
     request_body = request.data
+
     filters = {}
     domains = []
-    for k, v in request_body.items():
-        if k == 'domains':
-            domains = v
-        else: 
-            filters[k] = v
+    # try accessing keys
+    try:
+    	domains = request_body['domains']
+    	filters = request_body['filters']
+    except Exception as e:
+    	# send 400 status code for bad request
+        content = {'error': 'No domains or filters specified.'}
+        return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
-    print(filters)
-    # # print(request_body.keys)
-    # # for key in request_body.keys:
-    # #     print(key)
-    
-    # for key in request_body:
-    #     print(key)
+    # check if domains is list of strings
+    if not isinstance(domains, list) and all(isinstance(domain, str) for domain in domains):
+        content = {'error': 'Invalid domain(s).'}
+        return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+    # check if filters is dict
+    if not isinstance(filters, dict):
+        content = {'error': 'Invalid filter(s).'}
+        return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
     college_dict = {
         
     }
     
-    for d in domains:
-        college_dict[d] = False
-
-    
-
-
     for domain in domains:
-
-        college_info = None #College.objects.filter(domain__equals = domain)
+        total_filters = 0
+        passed_filters = 0
+        college_info = None
         try:
             college_info = College.objects.get(domain = domain)
+        except College.MultipleObjectsReturned:
+            college_info = College.objects.filter(domain = domain)[0]
         except College.DoesNotExist:
             college_dict[domain] = True
             continue
-        conclusion = True
-        if filters["filters"]["optStatus"]["useRanking"]:
-            if filters["filters"]["schoolRankings"]["lowestRanking"] > college_info.overall_rank:
-                conclusion = False
-                print('dsds09870987')
+        try:
+            # SAT Score
+            if filters.get('optStatus').get('useSATScore') == 'true':
+                filter_data = filters.get('sat')
+                if filter_data.get('min') and college_info.sat:
+                    total_filters += 1
+                    if int(filter_data.get('min')) <= college_info.sat:
+                        passed_filters += 1
+                if filter_data.get('max') and college_info.sat:
+                    total_filters += 1
+                    if int(filter_data.get('max')) >= college_info.sat:
+                        passed_filters += 1
+            # ACT Score
+            if filters.get('optStatus').get('useACTScore') == 'true':
+                filter_data = filters.get('act')
+                if filter_data.get('min') and college_info.act:
+                    total_filters += 1
+                    if int(filter_data.get('min')) <= college_info.act:
+                        passed_filters += 1
+                if filter_data.get('max') and college_info.act:
+                    total_filters += 1
+                    if int(filter_data.get('max')) >= college_info.act:
+                        passed_filters += 1
+            # Tuition
+            if filters.get('optStatus').get('useTution') == 'true':
+                filter_data = filters.get('tuition')
+                if filter_data.get('max') and college_info.tuition:
+                    total_filters += 1
+                    if int(filter_data.get('max')) >= college_info.tuition:
+                        passed_filters += 1
+            # Student Body Size
+            if filters.get('optStatus').get('useStudentBodySize') == 'true':
+                filter_data = filters.get('studentbodysize')
+                if filter_data.get('min') and college_info.undergrad_student_body:
+                    total_filters += 1
+                    if int(filter_data.get('min')) <= college_info.undergrad_student_body:
+                        passed_filters += 1
+                if filter_data.get('max') and college_info.undergrad_student_body:
+                    total_filters += 1
+                    if int(filter_data.get('max')) >= college_info.undergrad_student_body:
+                        passed_filters += 1
+            # Acceptance Rate
+            if filters.get('optStatus').get('useAcceptanceRate') == 'true':
+                filter_data = filters.get('acceptanceRate')
+                if filter_data.get('min') and college_info.acceptance:
+                    total_filters += 1
+                    if int(filter_data.get('min')) <= college_info.acceptance:
+                        passed_filters += 1
+                if filter_data.get('max') and college_info.acceptance:
+                    total_filters += 1
+                    if int(filter_data.get('max')) >= college_info.acceptance:
+                        passed_filters += 1
+            # School Rankings
+            if filters.get('optStatus').get('useRanking') == 'true':
+                filter_data = filters.get('schoolRankings')
+                if filter_data.get('lowestRanking') and college_info.overall_rank:
+                    total_filters += 1
+                    if int(filter_data.get('lowestRanking')) <= college_info.overall_rank:
+                        passed_filters += 1
+            # Region
+            if filters.get('optStatus').get('useStates') == 'true':
+                filter_data = filters.get('states')
+                if filter_data:
+                    total_filters += 1
+                    if college_info.state in filter_data.get('states')
+                        passed_filters += 1
+        except:
+            content = {'error': 'Invalid Filters'}
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        if total_filters != passed_filters:
+            college_dict[domain] = True
+        else:
+            college_dict[domain] = False
 
-        if filters["filters"]["optStatus"]["useAcceptanceRate"]:
-            if filters["filters"]["acceptanceRate"]["min"] > college_info.acceptance or filters["filters"]["acceptanceRate"]["max"] < college_info.acceptance:
-                conclusion = False
-                print('dsds7564')
-
-        if filters["filters"]["optStatus"]["useStudentBodySize"]:
-            if filters["filters"]["studentbodysize"]["min"] > college_info.undergrad_student_body or filters["filters"]["studentbodysize"]["max"] < college_info.undergrad_student_body:
-                conclusion = False
-                print('dsds421421412')
-
-        if filters["filters"]["optStatus"]["useSATScore"]:
-            if filters["filters"]["sat"]["min"] > college_info.sat or filters["filters"]["sat"]["max"] < college_info.sat:
-                conclusion = False
-                print('dsds312')
-
-        if filters["filters"]["optStatus"]["useACTScore"]:
-            if filters["filters"]["act"]["min"] > college_info.act or filters["filters"]["act"]["max"] < college_info.act:
-                conclusion = False
-                print('dsds12')
-
-        if filters["filters"]["optStatus"]["useTution"]:
-            if filters["filters"]["tuition"]["max"] < college_info.tuition:
-                conclusion = False
-                print('dsds312321321321')
-        college_dict[domain] = conclusion
-    # for k in request_body.items():
-    #     print(k)
-    # print(request_body.lists())
-    # # min_sat_score = request_body.get('filters').get('sat').get('min')
-    # # if min_sat_score is not None:
-    # #     colleges_match = College.objects.filter(sat=min_sat_score)
-    # # all_domains = request_body.get('domains')
-    
-    # # for domain in request_body.get('domains'):
-    # #     # college_dict[domain] = True
-    # #     print(domain)
-    
-    return JsonResponse(college_dict)
+    return Response(college_dict, status=status.HTTP_200_OK)
