@@ -121,8 +121,7 @@ def college_post(request):
                 if filter_data:
                     total_filters += 1
                     if college_info.state in filter_data.get('states')
-                        if int(filter_data.get('lowestRanking')) <= college_info.overall_rank:
-                            passed_filters += 1
+                        passed_filters += 1
         except:
             content = {'error': 'Invalid Filters'}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
