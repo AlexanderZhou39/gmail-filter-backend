@@ -41,24 +41,26 @@ def college_post(request):
         content = {'error': 'Invalid filter(s).'}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
-    college_dict = {
-        
-    }
-    
+    college_dict = {}
+
     for domain in domains:
         total_filters = 0
         passed_filters = 0
         college_info = None
+        if '@' in domain:
+            parsed_domain = domain.split('@')[1]
+        else:
+            parsed_domain = domain
+
         try:
-            college_info = College.objects.get(domain = domain)
+            college_info = College.objects.get(domain = parsed_domain)
         except College.MultipleObjectsReturned:
-            college_info = College.objects.filter(domain = domain)[0]
+            college_info = College.objects.filter(domain = parsed_domain)[0]
         except College.DoesNotExist:
-            college_dict[domain] = True
             continue
         try:
             # SAT Score
-            if filters.get('optStatus').get('useSATScore') == 'true':
+            if filters.get('optOutStatus').get('useSATScore') == 'true':
                 filter_data = filters.get('sat')
                 if filter_data.get('min') and college_info.sat:
                     total_filters += 1
@@ -69,7 +71,7 @@ def college_post(request):
                     if int(filter_data.get('max')) >= college_info.sat:
                         passed_filters += 1
             # ACT Score
-            if filters.get('optStatus').get('useACTScore') == 'true':
+            if filters.get('optOutStatus').get('useACTScore') == 'true':
                 filter_data = filters.get('act')
                 if filter_data.get('min') and college_info.act:
                     total_filters += 1
@@ -80,14 +82,14 @@ def college_post(request):
                     if int(filter_data.get('max')) >= college_info.act:
                         passed_filters += 1
             # Tuition
-            if filters.get('optStatus').get('useTution') == 'true':
+            if filters.get('optOutStatus').get('useTution') == 'true':
                 filter_data = filters.get('tuition')
                 if filter_data.get('max') and college_info.tuition:
                     total_filters += 1
                     if int(filter_data.get('max')) >= college_info.tuition:
                         passed_filters += 1
             # Student Body Size
-            if filters.get('optStatus').get('useStudentBodySize') == 'true':
+            if filters.get('optOutStatus').get('useStudentBodySize') == 'true':
                 filter_data = filters.get('studentbodysize')
                 if filter_data.get('min') and college_info.undergrad_student_body:
                     total_filters += 1
@@ -98,7 +100,7 @@ def college_post(request):
                     if int(filter_data.get('max')) >= college_info.undergrad_student_body:
                         passed_filters += 1
             # Acceptance Rate
-            if filters.get('optStatus').get('useAcceptanceRate') == 'true':
+            if filters.get('optOutStatus').get('useAcceptanceRate') == 'true':
                 filter_data = filters.get('acceptanceRate')
                 if filter_data.get('min') and college_info.acceptance:
                     total_filters += 1
@@ -109,18 +111,18 @@ def college_post(request):
                     if int(filter_data.get('max')) >= college_info.acceptance:
                         passed_filters += 1
             # School Rankings
-            if filters.get('optStatus').get('useRanking') == 'true':
+            if filters.get('optOutStatus').get('useRanking') == 'true':
                 filter_data = filters.get('schoolRankings')
                 if filter_data.get('lowestRanking') and college_info.overall_rank:
                     total_filters += 1
                     if int(filter_data.get('lowestRanking')) <= college_info.overall_rank:
                         passed_filters += 1
             # Region
-            if filters.get('optStatus').get('useStates') == 'true':
+            if filters.get('optOutStatus').get('useStates') == 'true':
                 filter_data = filters.get('states')
                 if filter_data:
                     total_filters += 1
-                    if college_info.state in filter_data.get('states')
+                    if college_info.state in filter_data:
                         passed_filters += 1
         except:
             content = {'error': 'Invalid Filters'}
