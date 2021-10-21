@@ -1,5 +1,6 @@
 # Unwanted files
 __pycache__/
+.DS_Store
 
 # Django-environ environment
 .env
